@@ -1,0 +1,23 @@
+{
+  "name": "mr-scraper",
+  "version": "1.0.0",
+  "description": "Mr. Scraper",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/freddyh/mr-scraper.git"
+  },
+  "keywords": [
+    "html",
+    "scraper"
+  ],
+  "author": "fhj",
+  "license": "Unlicense",
+  "bugs": {
+    "url": "https://github.com/freddyh/mr-scraper/issues"
+  },
+  "homepage": "https://github.com/freddyh/mr-scraper#readme"
+}
