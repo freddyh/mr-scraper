@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/freddyh/mr-scraper/issues"
   },
-  "homepage": "https://github.com/freddyh/mr-scraper#readme"
+  "homepage": "https://github.com/freddyh/mr-scraper#readme",
+  "dependencies": {
+    "puppeteer": "^1.20.0"
+  }
 }
