@@ -37,7 +37,10 @@ const readSongUrls = async (artistUrl) => {
     await page.click(view_all_songs_selector);
     await page.screenshot({ path: `screenshots/${Date()}.png` });
     await page.waitFor(2 * 1000);
-    
+
+    const maxFailures = 10;
+    var failuresCount = 0;
+
     var n = 1;
     var error = null;
     while (error == null) {
@@ -47,9 +50,22 @@ const readSongUrls = async (artistUrl) => {
             console.log(songUrl);
             n += 1;
         } catch {
-            const message = 'fhj: selector not found';
-            console.log(message);
-            error = Error(message);
+            if (failuresCount >= maxFailures) {
+                const message = 'fhj: selector not found';
+                console.log(message);
+                error = Error(message);
+            }
+            failuresCount += 1;
+
+            const scrollable_section = 'body > div.modal_window';
+            await page.evaluate(selector => {
+                const scrollableSection = document.querySelector(selector);
+                const offset = 1000000;
+                scrollableSection.scrollTop = offset;
+            }, scrollable_section);
+
+            await page.waitFor(6 * 1000);
+            await page.screenshot({ path: `screenshots/${Date()}.png` });
         }
     }
 
