@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/freddyh/mr-scraper#readme",
   "dependencies": {
+    "mysql": "^2.17.1",
     "puppeteer": "^1.20.0"
   }
 }
