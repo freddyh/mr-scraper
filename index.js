@@ -1,13 +1,15 @@
 const puppeteer = require('puppeteer');
-const mysql = require('mysql');
+const fs = require('fs');
 
-const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'developer',
-    password: '',
-    database: 'mrscraper'
-});
-connection.connect();
+const setupScreenshots = () => {
+    const folderName = 'screenshots';
+    try {
+        fs.mkdirSync(folderName);
+    } catch (err) {
+        console.error(err);
+    }
+};
+setupScreenshots();
 
 // read lyrics given the url 
 const readLyrics = async (songUrl) => {
@@ -15,7 +17,6 @@ const readLyrics = async (songUrl) => {
         headless: true
     });
     const page = await browser.newPage();
-    //   const songUrl = 'https://genius.com/2pac-keep-ya-head-up-lyrics';
     await page.goto(songUrl);
 
     const lyrics_selector = 'body > routable-page > ng-outlet > song-page > div > div > div.song_body.column_layout > div.column_layout-column_span.column_layout-column_span--primary > div > defer-compile:nth-child(2) > lyrics > div > div > section';
@@ -72,10 +73,4 @@ const readSongUrls = async (artistUrl) => {
     await browser.close();
 };
 
-connection.query('select * from artists;', (error, artists, fields) => {
-    if (error) throw error;
-    const artistUrl = artists[0].geniusUrl
-    readSongUrls(artistUrl);
-});
-
-connection.end();
+readSongUrls('https://genius.com/artists/2pac');
