@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
+const print = console.log;
 
 const setupScreenshots = () => {
     const folderName = 'screenshots';
@@ -73,4 +74,9 @@ const readSongUrls = async (artistUrl) => {
     await browser.close();
 };
 
-readSongUrls('https://genius.com/artists/2pac');
+readSongUrls('https://genius.com/artists/2pac')
+    .then(() => {
+        print('read song urls success');
+    }).catch((err) => {
+        print('read song urls error', err);
+    });
