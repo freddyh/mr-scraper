@@ -4,67 +4,108 @@ const print = console.log;
 const LyricsDB = require('./LyricsDB');
 const maxFailures = 2;
 
+const showAllAlbumsSelector = 'div.full_width_button:nth-child(2)';
+const showAlbumSelector = '.modal_window-content > ng-transclude:nth-child(1) > scrollable-data:nth-child(1) > div:nth-child(1) > transclude-injecting-local-scope:nth-child(1) > div:nth-child(1) > mini-album-card:nth-child(1) > a:nth-child(1)';
+const albumTitleSelector = '.modal_window-content > ng-transclude:nth-child(1) > scrollable-data:nth-child(1) > div:nth-child(1) > transclude-injecting-local-scope:nth-child(1) > div:nth-child(1) > mini-album-card:nth-child(1) > a:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1)';
+const albumYearSelector = '.modal_window-content > ng-transclude:nth-child(1) > scrollable-data:nth-child(1) > div:nth-child(1) > transclude-injecting-local-scope:nth-child(1) > div:nth-child(1) > mini-album-card:nth-child(1) > a:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2)';
+
+const buildItemSelector = (n) => {
+    return `body > div.modal_window > div.modal_window-content.modal_window-content--narrow_width.modal_window-content--white_background > ng-transclude > artist-songs > scrollable-data > div:nth-child(1) > transclude-injecting-local-scope:nth-child(${n}) > div > mini-song-card > a`;
+};
+
+const buildSongNameSelector = (n) => {
+    return `.modal_window-content > ng-transclude:nth-child(1) > artist-songs:nth-child(1) > scrollable-data:nth-child(3) > div:nth-child(1) > transclude-injecting-local-scope:nth-child(${n}) > div:nth-child(1) > mini-song-card:nth-child(1) > a:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1)`;
+};
+
+const buildSongListSelector = () => {
+    return 'body > routable-page > ng-outlet > routable-profile-page > ng-outlet > routed-page > profile-page > div.column_layout > div.column_layout-column_span.column_layout-column_span--primary > artist-songs-and-albums > div.full_width_button.u-clickable.u-bottom_margin';
+};
+
+const TupacArtistUrl = 'https://genius.com/artists/2pac';
+
 const setupScreenshots = () => {
     const folderName = 'screenshots';
     try {
         fs.mkdirSync(folderName);
+        console.info(`creating 'screenshots' directory for debugging purposes`);
     } catch (err) {
-        console.info(err);
+        if (err != null && !err.message.includes('EEXIST: file already exists')) {
+            console.error(err);
+        }
     }
 };
-setupScreenshots();
 
-// read lyrics given the url 
-const readLyrics = async (songUrl) => {
+const openPageTask = async (url) => {
     const browser = await puppeteer.launch({
         headless: true
     });
     const page = await browser.newPage();
-    await page.goto(songUrl);
+    await page.goto(url);
+    const model = {
+        page: page,
+        onComplete: () => { browser.close() }
+    }
+    return model
+};
+
+// read lyrics given the url 
+const readLyrics = async (songUrl) => {
+    console.log(`Opening page at ${songUrl}`);
+    const task = await openPageTask(songUrl);
+    const page = task.page;
 
     const lyrics_selector = 'body > routable-page > ng-outlet > song-page > div > div > div.song_body.column_layout > div.column_layout-column_span.column_layout-column_span--primary > div > defer-compile:nth-child(2) > lyrics > div > div > section';
     const lyrics = await page.$eval(lyrics_selector, el => el.innerText);
-    console.log(lyrics);
-
-    await browser.close();
+    await task.onComplete();
+    return lyrics;
 };
 
 // show songs for a given artist and read the hrefs
 const readSongUrls = async (artistUrl) => {
-    const browser = await puppeteer.launch({
-        headless: true
-    });
-    const page = await browser.newPage();
-    await page.goto(artistUrl);
+    console.log(`Opening page at ${artistUrl}`);
+    const task = await openPageTask(artistUrl);
+    const page = task.page;
+    console.log(`Opened page at ${artistUrl}`);
 
     const view_all_songs_selector = 'body > routable-page > ng-outlet > routable-profile-page > ng-outlet > routed-page > profile-page > div.column_layout > div.column_layout-column_span.column_layout-column_span--primary > artist-songs-and-albums > div.full_width_button.u-clickable.u-bottom_margin';
     await page.click(view_all_songs_selector);
     await page.screenshot({ path: `screenshots/${Date()}.png` });
-    await page.waitFor(2 * 1000);
+    console.log(`Waiting for ten seconds...`);
+    await page.waitFor(10 * 1000);
 
     var failuresCount = 0;
 
     var n = 1;
     var error = null;
+    var songs = [];
     while (error == null) {
         try {
             const itemSelector = `body > div.modal_window > div.modal_window-content.modal_window-content--narrow_width.modal_window-content--white_background > ng-transclude > artist-songs > scrollable-data > div:nth-child(1) > transclude-injecting-local-scope:nth-child(${n}) > div > mini-song-card > a`;
             const songUrl = await page.$eval(itemSelector, el => el.href);
             const songNameSelector = `.modal_window-content > ng-transclude:nth-child(1) > artist-songs:nth-child(1) > scrollable-data:nth-child(3) > div:nth-child(1) > transclude-injecting-local-scope:nth-child(${n}) > div:nth-child(1) > mini-song-card:nth-child(1) > a:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1)`;
             const songName = await page.$eval(songNameSelector, el => el.innerHTML);
-            LyricsDB.insertOne({
+
+            const songData = {
                 name: songName,
                 url: songUrl
-            });
+            };
+
+            songs.push(songData);
+
+            console.log(`Retrieved song data: ${songData.name} ${songData.url}`);
+            LyricsDB.insertOne(songData);
+
             n += 1;
         } catch {
+            console.log(`Failed to read song name element`);
             failuresCount += 1;
             if (failuresCount >= maxFailures) {
                 const message = 'Max Failures Reached';
                 error = Error(message);
                 console.error(error);
             }
-
+            //  else {
+            console.log(`Scrolling down the page...preparing to try again`);
             const scrollable_section = 'body > div.modal_window';
             await page.evaluate(selector => {
                 const scrollableSection = document.querySelector(selector);
@@ -72,27 +113,46 @@ const readSongUrls = async (artistUrl) => {
                 scrollableSection.scrollTop = offset;
             }, scrollable_section);
 
-            await page.waitFor(6 * 1000);
+            const interval = 6;
+            console.log(`Waiting for ${interval} seconds`);
+            await page.waitFor(interval * 1000);
             await page.screenshot({ path: `screenshots/${Date()}.png` });
+            // }
         }
     }
 
-    await browser.close();
+    await task.onComplete();
+    return songs;
+};
+
+const clickShowAllAlbums = async (artistUrl) => {
+    const task = await openPageTask(artistUrl);
+    const page = task.page;
+
+    await page.click(showAllAlbumsSelector);
+    await page.waitFor(2 * 1000);
+    await page.screenshot({ path: `screenshots/${Date()}.png` });
 };
 
 const main = async () => {
+    const artistUrl = TupacArtistUrl;
+    // clickShowAllAlbums(artistUrl);
+
     await LyricsDB.clear();
-    const artistUrl = 'https://genius.com/artists/2pac';
     readSongUrls(artistUrl)
-        .then(() => {
+        .then((songs) => {
+            console.log(songs);
             LyricsDB.listAll().then((result) => {
-                debugger;
+                readLyrics(result[0].url).then((s) => {
+                    print(s)
+                });
             }).catch((err) => {
-                print(err);
-            })
+                print('read lyrics error', err);
+            });
         }).catch((err) => {
-            print('read song urls error', err);
+            print('read song data error', err);
         });
 };
 
+// setupScreenshots();
 main();

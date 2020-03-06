@@ -50,4 +50,11 @@ const insertOne = (one) => {
     });
 };
 
-module.exports = { insertOne, listAll, clear };
+const testConnection = () => {
+    return MongoClient.connect(url, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true
+    });
+}
+
+module.exports = { insertOne, listAll, clear, testConnection };

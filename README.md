@@ -1,2 +1,4 @@
 # mr-scraper
-Mr. Scraper
+
+1. Install Node
+1. Install Mongo
