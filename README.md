@@ -1,2 +1,1 @@
-# mr-scraper
-Mr. Scraper
+# Lyrical Mania
