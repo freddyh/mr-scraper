@@ -153,5 +153,4 @@ const main = async () => {
         });
 };
 
-// setupScreenshots();
 main();
